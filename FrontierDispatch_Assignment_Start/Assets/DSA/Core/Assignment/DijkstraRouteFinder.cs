@@ -35,6 +35,27 @@ namespace FrontierDispatch.Core
                 }
 
             }
+
+            int size = maxId + 1;
+            _exists = new bool[size];
+            _outgoing = new List<Connection>[size];
+
+            for (int i = 0; i < size; i++)
+            {
+                _outgoing[i] = new List<Connection>();
+            }
+
+            for (int i = 0; i < _world.Locations.Count; i++)
+            {
+                int locId = _world.Locations[i].Id;
+                _exists[locId] = true;
+            }
+
+            for (int i = 0; i < _world.Connections.Count; i++)
+            {
+                var c = _world.Connections[i];
+                _outgoing[c.FromLocationId].Add(c);
+            }
         }
 
         /// <summary>
@@ -49,7 +70,6 @@ namespace FrontierDispatch.Core
             // TODO: implement Dijkstra using your prepared world representation
             // and MinPriorityQueue<T>.
 
-            new RouteResult(false, new List<int>(), 0, 0);
 
             if (!IsKnown(startLocationId) || !IsKnown(goalLocationId))
             {
@@ -69,18 +89,61 @@ namespace FrontierDispatch.Core
             queue.Enqueue(startLocationId, 0);
             int expanded = 0;
 
+            while (queue.Count > 0)
+            {
+                int current = queue.Dequeue();
+                if (done[current])
+                {
+                    continue;
+                }
 
-            throw new NotImplementedException();
+                done[current] = true;
+                expanded++;
+                if (current == goalLocationId)
+                {
+                    break;
+                }
 
+                foreach (var conn in _outgoing[current])
+                {
+                    int newCost = dist[current] + conn.TravelCost;
+
+                    if (newCost < dist[conn.ToLocationId])
+                    {
+                        dist[conn.ToLocationId] = newCost;
+                        previous[conn.ToLocationId] = current;
+                        queue.Enqueue(conn.ToLocationId, newCost);
+                    }
+                }
+            }
+
+            if (dist[goalLocationId] == int.MaxValue)
+            {
+                return new RouteResult(false, new List<int>(), 0, expanded);
+            }
+
+            var path = new List<int>();
+            int curr = goalLocationId;
+
+            while (curr != -1)
+            {
+                path.Add(curr);
+                curr = previous[curr];
+            }
+
+            path.Reverse();
+
+            return new RouteResult(true, path, dist[goalLocationId], expanded);
         }
 
-        
-        private bool IsKnown(int id)
-        {
-            return id >= 0 && id < _exists.Length && _exists[id];
+
+
+
+            private bool IsKnown(int id)
+            {
+                return id >= 0 && id < _exists.Length && _exists[id];
+
+            }
 
         }
-
-
     }
-}
