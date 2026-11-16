@@ -20,26 +20,67 @@ namespace FrontierDispatch.Core
     public sealed class ReachabilityQuery
     {
         private readonly WorldData _world;
-
-        /// <summary>
-        /// Creates a reachability query operating on the supplied world.
-        /// </summary>
         public ReachabilityQuery(WorldData world)
         {
             _world = world ?? throw new ArgumentNullException(nameof(world));
         }
 
-        /// <summary>
-        /// Returns reachable location IDs mapped to their cheapest known
-        /// travel cost from the starting location.
-        ///
-        /// Only locations whose cheapest cost is within maxTravelCost should
-        /// be included. The starting location has cost 0.
-        /// </summary>
         public IReadOnlyDictionary<int, int> FindReachable(int startLocationId, int maxTravelCost)
         {
-            // TODO: adapt shortest-path reasoning to the travel-cost budget.
-            throw new NotImplementedException();
+            // 1. Find max ID to size our arrays
+            int maxId = -1;
+            foreach (var loc in _world.Locations)
+            {
+                if (loc.Id > maxId) maxId = loc.Id;
+            }
+
+            int size = maxId + 1;
+            var exists = new bool[size];
+            var outgoing = new List<Connection>[size];
+
+            for (int i = 0; i < size; i++) outgoing[i] = new List<Connection>();
+            foreach (var loc in _world.Locations) exists[loc.Id] = true;
+            foreach (var c in _world.Connections) outgoing[c.FromLocationId].Add(c);
+
+            if (startLocationId < 0 || startLocationId >= size || !exists[startLocationId])
+            {
+                return new Dictionary<int, int>();
+            }
+
+            int[] dist = new int[size];
+            Array.Fill(dist, int.MaxValue);
+            dist[startLocationId] = 0;
+
+            var queue = new MinPriorityQueue<int>();
+            queue.Enqueue(startLocationId, 0);
+
+            while (queue.Count > 0)
+            {
+                int current = queue.Dequeue();
+
+                foreach (var conn in outgoing[current])
+                {
+                    int newCost = dist[current] + conn.TravelCost;
+
+                    // Only update if it's within budget and cheaper
+                    if (newCost <= maxTravelCost && newCost < dist[conn.ToLocationId])
+                    {
+                        dist[conn.ToLocationId] = newCost;
+                        queue.Enqueue(conn.ToLocationId, newCost);
+                    }
+                }
+            }
+            var result = new Dictionary<int, int>();
+            for (int i = 0; i < size; i++)
+            {
+                if (exists[i] && dist[i] <= maxTravelCost)
+                {
+                    result[i] = dist[i];
+                }
+            }
+            {
+                return result;
+            }
         }
     }
 }
