@@ -17,22 +17,38 @@ namespace FrontierDispatch.Core
     /// </summary>
     public sealed class WorldQueries
     {
-        private readonly WorldData _world;
+        private readonly Dictionary<int, Location> _locations = new Dictionary<int, Location>();
+        private readonly Dictionary<int, List<Connection>> _outgoing = new Dictionary<int, List<Connection>>();
 
         public WorldQueries(WorldData world)
         {
-            _world = world ?? throw new ArgumentNullException(nameof(world));
+            if (world == null) throw new ArgumentNullException(nameof(world));
+            for (int i = 0; i < world.Locations.Count; ++i)
+            {
+                Location location = world.Locations[i];
+                _locations[location.Id] = location; 
+            }
+            
+            for (int i = 0; i < world.Connections.Count; ++i)
+            {
+                Connection connection = world.Connections[i];
+                int fromId = connection.FromLocationId;
+
+                if (!_outgoing.ContainsKey(fromId))
+                {
+                    _outgoing[fromId] = new List<Connection>();
+                }
+                _outgoing[fromId].Add(connection);
+            }
+            
+           
         }
 
         public Location? FindLocationById(int id)
         {
-            for (int i = 0; i < _world.Locations.Count; ++i)
+            if (_locations.ContainsKey(id))
             {
-                Location location = _world.Locations[i];
-                if (location.Id == id)
-                {
-                    return location;
-                }
+                return _locations[id];
             }
 
             return null;
@@ -40,17 +56,12 @@ namespace FrontierDispatch.Core
 
         public IReadOnlyList<Connection> FindOutgoingConnections(int fromLocationId)
         {
-            var result = new List<Connection>();
-            for (int i = 0; i < _world.Connections.Count; ++i)
+            if (_outgoing.ContainsKey(fromLocationId))
             {
-                Connection connection = _world.Connections[i];
-                if (connection.FromLocationId == fromLocationId)
-                {
-                    result.Add(connection);
-                }
+                return _outgoing[fromLocationId];
             }
 
-            return result;
+            return new List<Connection>();
         }
     }
 }
