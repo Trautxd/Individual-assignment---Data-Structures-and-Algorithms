@@ -73,7 +73,7 @@ namespace FrontierDispatch.Core
             var result = new Dictionary<int, int>();
             for (int i = 0; i < size; i++)
             {
-                if (exists[i] && dist[i] <= maxTravelCost)
+                if (exists[i] && dist[i] != int.MaxValue && dist[i] <= maxTravelCost)
                 {
                     result[i] = dist[i];
                 }

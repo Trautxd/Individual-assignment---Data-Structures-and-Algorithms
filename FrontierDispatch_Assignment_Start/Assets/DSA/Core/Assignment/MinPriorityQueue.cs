@@ -47,7 +47,7 @@ namespace FrontierDispatch.Core
             // TODO: return the current minimum without changing the queue.
             if (_heap.Count == 0)
             {
-                throw new NotImplementedException("there is nothing in the queue");
+                throw new InvalidOperationException("there is nothing in the queue");
 
             }
             return _heap[0].Item;
@@ -64,7 +64,7 @@ namespace FrontierDispatch.Core
             // TODO: remove the minimum item and restore the min-heap invariant.
             if (_heap.Count == 0)
             {
-                throw new NotImplementedException("there is nothing in the queue");
+                throw new InvalidOperationException("there is nothing in the queue");
             }
 
             T smallest = _heap[0].Item;
@@ -103,26 +103,30 @@ namespace FrontierDispatch.Core
 
         private void SiftDown(int index)
         {
-            int leftIndex = index * 2 + 1;
-            int rightIndex = index * 2 + 2;
-            int smallestIndex = index;
-
-            if (leftIndex < _heap.Count && _heap[leftIndex].Priority < _heap[smallestIndex].Priority)
+            while (true)
             {
-                smallestIndex = leftIndex;
-            }
+                int left = index * 2 + 1;
+                int right = index * 2 + 2;
+                int smallest = index;
 
-            if (rightIndex < _heap.Count && _heap[rightIndex].Priority < _heap[smallestIndex].Priority)
-            {
-                smallestIndex = rightIndex;
-            }
+                if (left < _heap.Count && _heap[left].Priority < _heap[smallest].Priority)
+                {
+                    smallest = left;
+                }
 
-            if (smallestIndex == index)
-            {
-                return;
+                if (right < _heap.Count && _heap[right].Priority < _heap[smallest].Priority)
+                {
+                    smallest = right;
+                }
+
+                if (smallest == index)
+                {
+                    return;
+                }
+
+                Swap(index, smallest);
+                index = smallest;
             }
-            Swap(index, smallestIndex);
-            index = smallestIndex;
         }
         private void Swap(int a, int b)
         {
